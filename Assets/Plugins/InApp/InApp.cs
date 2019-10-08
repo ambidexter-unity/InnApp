@@ -41,8 +41,6 @@ namespace InApp
             _keyForPrice = _baseKey + nameof(temp.Price);
             _keyForCheckIsBy = _baseKey + nameof(temp.IsBuy);
 
-            Dictionary<int, decimal> appStorePriceTiers = new Dictionary<int, decimal>(); //написать класс парсер
-
             bool isAndroid = false;
 #if UNITY_EDITOR
             isAndroid = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
@@ -53,25 +51,32 @@ namespace InApp
 #else
             isAndroid = true;
 #endif
+            Dictionary<int, decimal> appStorePriceTiers = new Dictionary<int, decimal>(); 
 
             // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
             var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
-            ProductCatalogItem a; //delete
 
             string decimalFormatingStyle = "F2";
             string paymentCurrency = "USD"; //для дефолтных значений ценник всегда в долларах, особенность реализации ProductCatalog
 
             foreach (var defaultProduct in defaultCatalog.allValidProducts)
             {
-                bool productIsSave = PlayerPrefs.GetString(_keyForCheckSave + defaultProduct.id, false.ToString()) == true.ToString();
-
                 var product = new Product(defaultProduct.id);
+
+                bool productIsSave = PlayerPrefs.GetString(_keyForCheckSave + defaultProduct.id, false.ToString()) == true.ToString();
                 if (productIsSave)
                 {
                     //формируем продукт из PlayerPrefs
+                    product.title = PlayerPrefs.GetString(_keyForTitle + product.Id, string.Empty);
+                    product.description = PlayerPrefs.GetString(_keyForDescription + product.Id, string.Empty);
+                    product.price = PlayerPrefs.GetString(_keyForPrice + product.Id, string.Empty);
                     product.isBuy = product.productType == ProductType.Consumable
                     ? false
                     : PlayerPrefs.GetString(_keyForCheckIsBy + defaultProduct.id, false.ToString()) == true.ToString();
+
+                    if (new List<string>() { product.title, product.description, product.price, product.isBuy.ToString() }
+                    .Exists(parameters => string.IsNullOrEmpty(parameters)) == true)
+                        Debug.LogError($"Один из параметров продукта {product.Id} не был корректно сохранен!");
                 }
                 else
                 {
@@ -111,6 +116,8 @@ namespace InApp
                 product.MarketIds = new IDs();
                 defaultProduct.allStoreIDs.ToList().ForEach(marketId => product.MarketIds.Add(marketId.id, marketId.store));
                 product.icon = GetSpriteWithId(product.Id);
+
+                _products.Add(product);
             }
         }
 
@@ -219,6 +226,7 @@ namespace InApp
         private void RefreshProducts()
         {
             //заглушка
+            //реализовать обновление параметров с сервера маркета и сохранение в префсы
         }
 
         private Sprite GetSpriteWithId(string id)

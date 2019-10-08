@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Purchasing;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace InApp
 {
@@ -21,26 +24,118 @@ namespace InApp
         private event Action<Result> _initEvent;
         private event Action<string, Result> _purchasingEvent; //(id продукта, результат)
 
+        private readonly string _keyForCheckSave;
+        private readonly string _keyForTitle;
+        private readonly string _keyForDescription;
+        private readonly string _keyForPrice;
+        private readonly string _keyForCheckIsBy;
+
         public InApp(TranslationLocale locale)
         {
-            //заглушка
-            var catalog = ProductCatalog.LoadDefaultCatalog();
+            // ключи для PlayerPrefs
+            var temp = new Product(string.Empty);
+            string _baseKey = nameof(InApp);
+            _keyForCheckSave = _baseKey + nameof(temp.IsBuy);
+            _keyForTitle = _baseKey + nameof(temp.Title);
+            _keyForDescription = _baseKey + nameof(temp.Description);
+            _keyForPrice = _baseKey + nameof(temp.Price);
+            _keyForCheckIsBy = _baseKey + nameof(temp.IsBuy);
 
-            foreach (var prePoduct in catalog.allValidProducts)
+            Dictionary<int, decimal> appStorePriceTiers = new Dictionary<int, decimal>(); //написать класс парсер
+
+            bool isAndroid = false;
+#if UNITY_EDITOR
+            isAndroid = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
+#elif UNITY_IPHONE
+            isAndroid = false;
+#elif UNITY_ANDROID
+            isAndroid = true;
+#else
+            isAndroid = true;
+#endif
+
+            // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
+            var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
+            ProductCatalogItem a; //delete
+
+            string decimalFormatingStyle = "F2";
+            string paymentCurrency = "USD"; //для дефолтных значений ценник всегда в долларах, особенность реализации ProductCatalog
+
+            foreach (var defaultProduct in defaultCatalog.allValidProducts)
             {
-                var newProduct = new Product(prePoduct.id); 
-                var translation = prePoduct.GetDescription(locale);
-                newProduct.title = translation.Title;
-                newProduct.description = translation.Description;
-                newProduct.productType = prePoduct.type;
-                newProduct.isBuy = newProduct.productType == ProductType.Consumable
+                bool productIsSave = PlayerPrefs.GetString(_keyForCheckSave + defaultProduct.id, false.ToString()) == true.ToString();
+
+                var product = new Product(defaultProduct.id);
+                if (productIsSave)
+                {
+                    //формируем продукт из PlayerPrefs
+                    product.isBuy = product.productType == ProductType.Consumable
                     ? false
-                    : PlayerPrefs.GetInt($"{nameof(InApp)}{prePoduct.id}{nameof(newProduct.isBuy)}", 0) == 1;
+                    : PlayerPrefs.GetString(_keyForCheckIsBy + defaultProduct.id, false.ToString()) == true.ToString();
+                }
+                else
+                {
+                    //формируем продукт ProductCatalog (дефолтные значения)
+                    var translation = defaultProduct.GetDescription(locale); //добавить проверку и выставление в дефолт
+                    product.title = translation.Title;
+                    product.description = translation.Description;
+                    string price = string.Empty;
+                    if (isAndroid)
+                    {
+                        price = defaultProduct.googlePrice.value.ToString(decimalFormatingStyle);
+                    }
+                    else
+                    {
+                        int tier = defaultProduct.applePriceTier;
+                        if (appStorePriceTiers.ContainsKey(tier))
+                        {
+                            price = appStorePriceTiers[tier].ToString(decimalFormatingStyle);
+                        }
+                        else
+                        {
+                            Debug.LogError($"Ошибка при поиске ценника для Appstore по словарю appStorePriceTiers " +
+                                $"для продукта {product.Id}: В словаре нет такого ключа.");
 
-                newProduct.MarketIds = new IDs();
-                prePoduct.allStoreIDs.ToList().ForEach(marketId => newProduct.MarketIds.Add(marketId.id, marketId.store));
+                            price = "9.99";
+                        }
+                    }
 
-                newProduct.icon = GetSpriteWithId(newProduct.Id);
+                    product.price = $"{price} {paymentCurrency}";
+                    product.isBuy = false;
+
+                    //сохраняем продукт в PlayerPrefs'ы
+                    SaveProductToPlayerPrefs(product);
+                }
+
+                product.productType = defaultProduct.type;
+                product.MarketIds = new IDs();
+                defaultProduct.allStoreIDs.ToList().ForEach(marketId => product.MarketIds.Add(marketId.id, marketId.store));
+                product.icon = GetSpriteWithId(product.Id);
+            }
+        }
+
+        private void SaveProductToPlayerPrefs(IProduct product, params string[] keys)
+        {
+            if (keys.Length > 0)
+            {
+                foreach (string key in keys)
+                {
+                    if (key == _keyForCheckSave) PlayerPrefs.SetString(_keyForCheckSave + product.Id, true.ToString());
+                    else if (key == _keyForTitle) PlayerPrefs.SetString(_keyForTitle + product.Id, product.Title);
+                    else if (key == _keyForDescription) PlayerPrefs.SetString(_keyForDescription + product.Id, product.Description);
+                    else if (key == _keyForPrice) PlayerPrefs.SetString(_keyForPrice + product.Id, product.Price);
+                    else if (key == _keyForCheckIsBy) PlayerPrefs.SetString(_keyForCheckIsBy + product.Id, product.IsBuy.ToString());
+                    else Debug.LogError($"Попытка сохранить параметр продукта {product.Id} по ключу {key}, " +
+                        $"которого нет среди возможных к сохранению");
+                }
+            }
+            else
+            {
+                PlayerPrefs.SetString(_keyForCheckSave + product.Id, true.ToString());
+                PlayerPrefs.SetString(_keyForTitle + product.Id, product.Title);
+                PlayerPrefs.SetString(_keyForDescription + product.Id, product.Description);
+                PlayerPrefs.SetString(_keyForPrice + product.Id, product.Price);
+                PlayerPrefs.SetString(_keyForCheckIsBy + product.Id, product.IsBuy.ToString());
             }
         }
 
@@ -230,6 +325,9 @@ namespace InApp
         public string description;
         public string Description => description;
 
+        public string price;
+        public string Price => price;
+
         public ProductType productType;
         public ProductType ProductType => productType;
 
@@ -253,6 +351,7 @@ namespace InApp
         string Title { get; }
         string Description { get; }
         ProductType ProductType { get; }
+        string Price { get; }
         bool IsBuy { get; }
         Sprite Icon { get; }
     }

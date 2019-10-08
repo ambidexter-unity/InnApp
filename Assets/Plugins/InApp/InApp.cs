@@ -21,9 +21,27 @@ namespace InApp
         private event Action<Result> _initEvent;
         private event Action<string, Result> _purchasingEvent; //(id продукта, результат)
 
-        public InApp()
+        public InApp(TranslationLocale locale)
         {
-            _products = CalculateProductPreInitialization();
+            //заглушка
+            var catalog = ProductCatalog.LoadDefaultCatalog();
+
+            foreach (var prePoduct in catalog.allValidProducts)
+            {
+                var newProduct = new Product(prePoduct.id); 
+                var translation = prePoduct.GetDescription(locale);
+                newProduct.title = translation.Title;
+                newProduct.description = translation.Description;
+                newProduct.productType = prePoduct.type;
+                newProduct.isBuy = newProduct.productType == ProductType.Consumable
+                    ? false
+                    : PlayerPrefs.GetInt($"{nameof(InApp)}{prePoduct.id}{nameof(newProduct.isBuy)}", 0) == 1;
+
+                newProduct.MarketIds = new IDs();
+                prePoduct.allStoreIDs.ToList().ForEach(marketId => newProduct.MarketIds.Add(marketId.id, marketId.store));
+
+                newProduct.icon = GetSpriteWithId(newProduct.Id);
+            }
         }
 
         public IInAppProcess Inizialization()
@@ -48,14 +66,7 @@ namespace InApp
 #endif
             var builder = ConfigurationBuilder.Instance(module);
 
-            foreach (var product in _products)
-            {
-                builder.AddProduct(product.Id, product.ProductType, new IDs()
-                    {
-                        {product.GoogleBundle, GooglePlay.Name},
-                        {product.IOSBundle, AppleAppStore.Name}
-                    });
-            }
+            _products.ForEach(product => builder.AddProduct(product.Id, product.ProductType, product.MarketIds));
 
             UnityPurchasing.Initialize(this, builder);
 
@@ -66,7 +77,7 @@ namespace InApp
         {
             var process = new InAppProcess();
 
-            Predicate<Product> predicate = predicateProduct => predicateProduct.id == idProduct;
+            Predicate<Product> predicate = predicateProduct => predicateProduct.Id == idProduct;
 
             if (_products.Exists(predicate) == false)
             {
@@ -113,16 +124,6 @@ namespace InApp
         private void RefreshProducts()
         {
             //заглушка
-        }
-
-        private List<Product> CalculateProductPreInitialization()
-        {
-            //заглушка
-            List<Product> result = new List<Product>();
-
-            result.ForEach(product => product.icon = GetSpriteWithId(product.id));
-
-            return result;
         }
 
         private Sprite GetSpriteWithId(string id)
@@ -220,37 +221,30 @@ namespace InApp
 
     public class Product : IProduct
     {
-        // идентификатор внутри приложения 
-        public string id;
-        public string Id => id;
+        private string _id;
+        public string Id => _id;
 
-        // имя товара по умолчанию
         public string title;
         public string Title => title;
 
-        // описание по умолчанию
         public string description;
         public string Description => description;
 
-        // код покупки на маркете AppStore
-        public string iOSBundle;
-        public string IOSBundle => iOSBundle;
-
-        // код покупки на маркете PlayMarket
-        public string googleBundle;
-        public string GoogleBundle => googleBundle;
-
-        // тип покупки (расходуемый, нерасходуемый, подписка)
         public ProductType productType;
         public ProductType ProductType => productType;
 
-        // статус приобретения на данный момент
         public bool isBuy;
         public bool IsBuy => isBuy;
 
-        // иконка
         public Sprite icon;
         public Sprite Icon => icon;
+
+        public IDs MarketIds;
+
+        public Product(string id)
+        {
+            _id = id;
+        }
     }
 
     public interface IProduct
@@ -258,8 +252,6 @@ namespace InApp
         string Id { get; }
         string Title { get; }
         string Description { get; }
-        string IOSBundle { get; }
-        string GoogleBundle { get; }
         ProductType ProductType { get; }
         bool IsBuy { get; }
         Sprite Icon { get; }

@@ -7,13 +7,9 @@ using UnityEngine.Purchasing;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+using InApp.SubClasses;
+using Product = InApp.SubClasses.Product;
 
-/*
- 1) описать логику обновления продуктов после удачной инициализации
- 2) вывести в едитор подсоединение иконок
- 3) протянуть значение tiers из файла в класс
- 4) протестировать 
-*/
 namespace InApp
 {
     public class InApp : IStoreListener
@@ -36,11 +32,12 @@ namespace InApp
         private readonly string _keyForPrice;
         private readonly string _keyForCheckIsBy;
 
-        private readonly TranslationLocale _locale;
+        private readonly UnityEngine.Purchasing.TranslationLocale _locale;
 
         public InApp(TranslationLocale locale)
         {
-            _locale = locale;
+            // перечисление TranslationLocale продублировано в пространство имен "InApp" с целью сокрытия пространства имен "UnityEngine.Purchasing"
+            _locale = (UnityEngine.Purchasing.TranslationLocale)(int)locale;
 
             // ключи для PlayerPrefs
             var temp = new Product(string.Empty);
@@ -61,7 +58,23 @@ namespace InApp
 #else
             isAndroid = true;
 #endif
-            Dictionary<int, decimal> appStorePriceTiers = new AppStoreListTiersCreator().GetValues();
+
+            // подтягиваем ценники для appstore для iphone
+            Dictionary<int, decimal> appStorePriceTiers = null;
+            if (isAndroid == false)
+                appStorePriceTiers = new AppStoreListTiersCreator().GetValues();
+
+            // находим и сетим иконки для продуктов
+            Dictionary<string, Sprite> productIcons = null;
+            ProductIcons productIconsContainer = Resources.Load<ProductIcons>(ProductIcons.RESOURCES_PATH);
+            if (productIconsContainer != null)
+            {
+                productIcons = productIconsContainer.GetProductIconsList();
+            }
+            else
+            {
+                Debug.LogError($"Не найден файл по пути {ProductIcons.RESOURCES_PATH} !");
+            }
 
             // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
             var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
@@ -91,7 +104,7 @@ namespace InApp
                 else
                 {
                     //формируем продукт ProductCatalog (дефолтные значения)
-                    var translation = defaultProduct.GetDescription(locale); //добавить проверку и выставление в дефолт
+                    var translation = defaultProduct.GetDescription(_locale); //добавить проверку и выставление в дефолт
                     product.title = translation.Title;
                     product.description = translation.Description;
                     string price = string.Empty;
@@ -125,7 +138,28 @@ namespace InApp
                 product.productType = defaultProduct.type;
                 product.MarketIds = new IDs();
                 defaultProduct.allStoreIDs.ToList().ForEach(marketId => product.MarketIds.Add(marketId.id, marketId.store));
-                product.icon = GetSpriteWithId(product.Id);
+
+                // сетим иконку
+                if (productIcons != null)
+                {
+                    if (productIcons.ContainsKey(product.Id))
+                    {
+                        Sprite icon = productIcons[product.Id];
+
+                        if (icon != null)
+                        {
+                            product.icon = icon;
+                        }
+                        else
+                        {
+                            Debug.LogError($"В словаре {productIcons} по ключу {product.Id} отсутствует значение");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"В словаре {productIcons} нет такого ключа, как {product.Id}");
+                    }
+                }
 
                 _products.Add(product);
             }
@@ -262,9 +296,9 @@ namespace InApp
                 product.title = title;
 
 
-                //маркет возвращает символ, которого нет в наших 
+                //маркет возвращает символ, которого может не быть в наших шрифтах
                 var price = unityProduct.metadata.localizedPriceString;
-                if (_locale == TranslationLocale.ru_RU) //пока корректно форматируется только русский язык. Зависит от используемых шрифтов.
+                if (_locale == UnityEngine.Purchasing.TranslationLocale.ru_RU) //пока корректно форматируется только русский язык. Зависит от используемых шрифтов.
                 {
                     var mathCharInPrice = '₽';
                     if (price.Contains(mathCharInPrice))
@@ -285,12 +319,6 @@ namespace InApp
 
                 SaveProductToPlayerPrefs(product, _keyForTitle, _keyForDescription, _keyForPrice);
             }
-        }
-
-        private Sprite GetSpriteWithId(string id)
-        {
-            //заглушка
-            return (Sprite)new object();
         }
 
         #region IStoreListener
@@ -355,16 +383,8 @@ namespace InApp
 
             _purchasingEvent?.Invoke(id, result);
         }
+
         #endregion
-    }
-
-    public class InAppProcess : IInAppProcess
-    {
-        public bool isDone = false;
-        public bool IsDone => IsDone;
-
-        public Result result = Result.Other;
-        public Result Result => result;
     }
 
     public interface IInAppProcess
@@ -378,6 +398,65 @@ namespace InApp
         Succes,
         Fail,
         Other
+    }
+
+    public interface IProduct
+    {
+        string Id { get; }
+        string Title { get; }
+        string Description { get; }
+        ProductType ProductType { get; }
+        string Price { get; }
+        bool IsBuy { get; }
+        Sprite Icon { get; }
+    }
+
+    public enum TranslationLocale
+    {
+        zh_TW = 0,
+        cs_CZ = 1,
+        da_DK = 2,
+        nl_NL = 3,
+        en_US = 4,
+        fr_FR = 5,
+        fi_FI = 6,
+        de_DE = 7,
+        iw_IL = 8,
+        hi_IN = 9,
+        it_IT = 10,
+        ja_JP = 11,
+        ko_KR = 12,
+        no_NO = 13,
+        pl_PL = 14,
+        pt_PT = 15,
+        ru_RU = 16,
+        es_ES = 17,
+        sv_SE = 18,
+        zh_CN = 19,
+        en_AU = 20,
+        en_CA = 21,
+        en_GB = 22,
+        fr_CA = 23,
+        el_GR = 24,
+        id_ID = 25,
+        ms_MY = 26,
+        pt_BR = 27,
+        es_MX = 28,
+        th_TH = 29,
+        tr_TR = 30,
+        vi_VN = 31
+    }
+}
+
+namespace InApp.SubClasses
+{
+    public class InAppProcess : IInAppProcess
+    {
+        public bool isDone = false;
+        public bool IsDone => IsDone;
+
+        public Result result = Result.Other;
+        public Result Result => result;
     }
 
     public class Product : IProduct
@@ -411,16 +490,26 @@ namespace InApp
         }
     }
 
-    public interface IProduct
+#if UNITY_EDITOR
+    public class AnyWindowEditor : EditorWindow
     {
-        string Id { get; }
-        string Title { get; }
-        string Description { get; }
-        ProductType ProductType { get; }
-        string Price { get; }
-        bool IsBuy { get; }
-        Sprite Icon { get; }
+        [MenuItem("Window/Unity IAP/Product Icons", false, 1)]
+        private static void OpenWindow()
+        {
+            ProductIcons asset = AssetDatabase.LoadAssetAtPath<ProductIcons>(ProductIcons.FUUL_PATH);
+
+            if (asset == null)
+            {
+                asset = ProductIcons.CreateInstance<ProductIcons>();
+                AssetDatabase.CreateAsset(asset, ProductIcons.FUUL_PATH);
+                AssetDatabase.SaveAssets();
+            }
+
+            EditorUtility.FocusProjectWindow();
+            Selection.activeObject = asset;
+        }
     }
+#endif
 
     public class AppStoreListTiersCreator
     {
@@ -515,28 +604,8 @@ namespace InApp
             [85] = 799.99m,
             [86] = 899.99m,
             [87] = 999.99m,
-        }; 
+        };
 
         public Dictionary<int, decimal> GetValues() => values;
     }
-
-#if UNITY_EDITOR
-    public class AnyWindowEditor : EditorWindow
-    {
-        [MenuItem("Window/Unity IAP/Product Icons", false, 1)]
-        private static void OpenWindow()
-        {
-            string assetPath = "Assets/AnyScriptableObject.asset";
-
-            if (AssetDatabase.LoadAssetAtPath<AnyScriptableObject>(assetPath) == null)
-            {
-                AnyScriptableObject asset = AnyScriptableObject.CreateInstance<AnyScriptableObject>();
-                AssetDatabase.CreateAsset(asset, assetPath);
-                AssetDatabase.SaveAssets();
-                EditorUtility.FocusProjectWindow();
-                Selection.activeObject = asset;
-            }
-        }
-    }
-#endif
 }

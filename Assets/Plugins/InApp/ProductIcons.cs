@@ -8,7 +8,8 @@ namespace InAppPurchasing
     public class ProductIcons : ScriptableObject
     {
         public const string FUUL_PATH = "Assets/Resources/ProductIcons.asset";
-        public const string RESOURCES_PATH = "ProductIcons.asset";
+        public const string RESOURCES_PATH = "ProductIcons";
+        //public const string RESOURCES_PATH = "/ProductIcons.asset";
 #pragma warning disable 649
         [SerializeField]
         private List<ProductIconsItem> _productIconsItems;

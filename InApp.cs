@@ -107,7 +107,7 @@ namespace InAppPurchasing
                 else
                 {
                     //формируем продукт ProductCatalog (дефолтные значения)
-                    var translation = defaultProduct.GetDescription(_locale); //добавить проверку и выставление в дефолт
+                    var translation =  defaultProduct.GetOrCreateDescription(_locale); 
                     product.title = translation.Title;
                     product.description = translation.Description;
                     string price = string.Empty;
@@ -462,7 +462,7 @@ namespace InAppPurchasing.SubClasses
     public class InAppProcess : IInAppProcess
     {
         public bool isDone = false;
-        public bool IsDone => IsDone;
+        public bool IsDone => isDone;
 
         public Result result = Result.Other;
         public Result Result => result;

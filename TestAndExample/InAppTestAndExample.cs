@@ -117,10 +117,12 @@ public class InAppTestAndExample : MonoBehaviour
             Text textTitle = uiProduct.GetComponentsInChildren<Text>()[0];
             Text textDescription = uiProduct.GetComponentsInChildren<Text>()[1];
             Text textPrice = uiProduct.GetComponentsInChildren<Text>()[2];
+            Button buttonBuy = uiProduct.GetComponentInChildren<Button>();
 
             textTitle.text = title;
             textDescription.text = description;
             textPrice.text = price;
+            buttonBuy.interactable = product.IsBuy == false;
         }
     }
 }

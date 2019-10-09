@@ -7,10 +7,14 @@ using UnityEngine.Purchasing;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-using InApp.SubClasses;
-using Product = InApp.SubClasses.Product;
+using InAppPurchasing.SubClasses;
+//Обратите внимание, что используются типы с одинаковыми названиями в пространствах InAppPurchasing и UnityEngine.Purchasing
+//Ряд типов и перечислений продублировано в пользовательском пространстве имен, чтобы сокрыть UnityEngine.Purchasing
+using Product = InAppPurchasing.SubClasses.Product;
+using ProductType = UnityEngine.Purchasing.ProductType;
+using TranslationLocale = UnityEngine.Purchasing.TranslationLocale;
 
-namespace InApp
+namespace InAppPurchasing
 {
     public class InApp : IStoreListener
     {
@@ -36,7 +40,6 @@ namespace InApp
 
         public InApp(TranslationLocale locale)
         {
-            // перечисление TranslationLocale продублировано в пространство имен "InApp" с целью сокрытия пространства имен "UnityEngine.Purchasing"
             _locale = (UnityEngine.Purchasing.TranslationLocale)(int)locale;
 
             // ключи для PlayerPrefs
@@ -93,7 +96,7 @@ namespace InApp
                     product.title = PlayerPrefs.GetString(_keyForTitle + product.Id, string.Empty);
                     product.description = PlayerPrefs.GetString(_keyForDescription + product.Id, string.Empty);
                     product.price = PlayerPrefs.GetString(_keyForPrice + product.Id, string.Empty);
-                    product.isBuy = product.productType == ProductType.Consumable
+                    product.isBuy = product.ProductType == ProductType.Consumable
                     ? false
                     : PlayerPrefs.GetString(_keyForCheckIsBy + defaultProduct.id, false.ToString()) == true.ToString();
 
@@ -219,7 +222,7 @@ namespace InApp
 #endif
             var builder = ConfigurationBuilder.Instance(module);
 
-            _products.ForEach(product => builder.AddProduct(product.Id, product.ProductType, product.MarketIds));
+            _products.ForEach(product => builder.AddProduct(product.Id, (UnityEngine.Purchasing.ProductType)(int)product.ProductType, product.MarketIds));
 
             UnityPurchasing.Initialize(this, builder);
 
@@ -294,7 +297,6 @@ namespace InApp
                     title = title.Remove(chatNum);
                 }
                 product.title = title;
-
 
                 //маркет возвращает символ, которого может не быть в наших шрифтах
                 var price = unityProduct.metadata.localizedPriceString;
@@ -411,6 +413,13 @@ namespace InApp
         Sprite Icon { get; }
     }
 
+    public enum ProductType
+    {
+        Consumable = 0,
+        NonConsumable = 1,
+        Subscription = 2
+    }
+
     public enum TranslationLocale
     {
         zh_TW = 0,
@@ -448,7 +457,7 @@ namespace InApp
     }
 }
 
-namespace InApp.SubClasses
+namespace InAppPurchasing.SubClasses
 {
     public class InAppProcess : IInAppProcess
     {
@@ -473,8 +482,8 @@ namespace InApp.SubClasses
         public string price;
         public string Price => price;
 
-        public ProductType productType;
-        public ProductType ProductType => productType;
+        public UnityEngine.Purchasing.ProductType productType;
+        public InAppPurchasing.ProductType ProductType => (InAppPurchasing.ProductType)(int)productType;
 
         public bool isBuy;
         public bool IsBuy => isBuy;

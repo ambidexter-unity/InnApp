@@ -61,7 +61,7 @@ namespace InApp
 #else
             isAndroid = true;
 #endif
-            Dictionary<int, decimal> appStorePriceTiers = new Dictionary<int, decimal>();
+            Dictionary<int, decimal> appStorePriceTiers = new AppStoreListTiersCreator().GetValues();
 
             // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
             var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
@@ -421,4 +421,122 @@ namespace InApp
         bool IsBuy { get; }
         Sprite Icon { get; }
     }
+
+    public class AppStoreListTiersCreator
+    {
+        // должно быть чтение из файла, но времени не хватило и пока жестко указаны ценики в коде. Ценники обновляются ~раз в год, так сто не особо страшно
+        private Dictionary<int, decimal> values = new Dictionary<int, decimal>()
+        {
+            [0] = 0.00m,
+            [1] = 0.99m,
+            [2] = 1.99m,
+            [3] = 2.99m,
+            [4] = 3.99m,
+            [5] = 4.99m,
+            [6] = 5.99m,
+            [7] = 6.99m,
+            [8] = 7.99m,
+            [9] = 8.99m,
+            [10] = 9.99m,
+            [11] = 10.99m,
+            [12] = 11.99m,
+            [13] = 12.99m,
+            [14] = 13.99m,
+            [15] = 14.99m,
+            [16] = 15.99m,
+            [17] = 16.99m,
+            [18] = 17.99m,
+            [19] = 18.99m,
+            [20] = 19.99m,
+            [21] = 20.99m,
+            [22] = 21.99m,
+            [23] = 22.99m,
+            [24] = 23.99m,
+            [25] = 24.99m,
+            [26] = 25.99m,
+            [27] = 26.99m,
+            [28] = 27.99m,
+            [29] = 28.99m,
+            [30] = 29.99m,
+            [31] = 30.99m,
+            [32] = 31.99m,
+            [33] = 32.99m,
+            [34] = 33.99m,
+            [35] = 34.99m,
+            [36] = 35.99m,
+            [37] = 36.99m,
+            [38] = 37.99m,
+            [39] = 38.99m,
+            [40] = 39.99m,
+            [41] = 40.99m,
+            [42] = 41.99m,
+            [43] = 42.99m,
+            [44] = 43.99m,
+            [45] = 44.99m,
+            [46] = 45.99m,
+            [47] = 46.99m,
+            [48] = 47.99m,
+            [49] = 48.99m,
+            [50] = 49.99m,
+            [51] = 54.99m,
+            [52] = 59.99m,
+            [53] = 64.99m,
+            [54] = 69.99m,
+            [55] = 74.99m,
+            [56] = 79.99m,
+            [57] = 84.99m,
+            [58] = 89.99m,
+            [59] = 94.99m,
+            [60] = 99.99m,
+            [61] = 109.9m,
+            [62] = 119.99m,
+            [63] = 124.99m,
+            [64] = 129.99m,
+            [65] = 139.99m,
+            [66] = 149.99m,
+            [67] = 159.99m,
+            [68] = 169.99m,
+            [69] = 174.99m,
+            [70] = 179.99m,
+            [71] = 189.99m,
+            [72] = 199.99m,
+            [73] = 209.99m,
+            [74] = 219.99m,
+            [75] = 229.99m,
+            [76] = 239.99m,
+            [77] = 249.99m,
+            [78] = 299.99m,
+            [79] = 349.99m,
+            [80] = 399.99m,
+            [81] = 449.99m,
+            [82] = 499.99m,
+            [83] = 599.99m,
+            [84] = 699.99m,
+            [85] = 799.99m,
+            [86] = 899.99m,
+            [87] = 999.99m,
+        }; 
+
+        public Dictionary<int, decimal> GetValues() => values;
+    }
+
+#if UNITY_EDITOR
+    public class AnyWindowEditor : EditorWindow
+    {
+        [MenuItem("Window/Unity IAP/Product Icons", false, 1)]
+        private static void OpenWindow()
+        {
+            string assetPath = "Assets/AnyScriptableObject.asset";
+
+            if (AssetDatabase.LoadAssetAtPath<AnyScriptableObject>(assetPath) == null)
+            {
+                AnyScriptableObject asset = AnyScriptableObject.CreateInstance<AnyScriptableObject>();
+                AssetDatabase.CreateAsset(asset, assetPath);
+                AssetDatabase.SaveAssets();
+                EditorUtility.FocusProjectWindow();
+                Selection.activeObject = asset;
+            }
+        }
+    }
+#endif
 }

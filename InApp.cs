@@ -8,6 +8,12 @@ using UnityEngine.Purchasing;
 using UnityEditor;
 #endif
 
+/*
+ 1) описать логику обновления продуктов после удачной инициализации
+ 2) вывести в едитор подсоединение иконок
+ 3) протянуть значение tiers из файла в класс
+ 4) протестировать 
+*/
 namespace InApp
 {
     public class InApp : IStoreListener
@@ -30,8 +36,12 @@ namespace InApp
         private readonly string _keyForPrice;
         private readonly string _keyForCheckIsBy;
 
+        private readonly TranslationLocale _locale;
+
         public InApp(TranslationLocale locale)
         {
+            _locale = locale;
+
             // ключи для PlayerPrefs
             var temp = new Product(string.Empty);
             string _baseKey = nameof(InApp);
@@ -51,7 +61,7 @@ namespace InApp
 #else
             isAndroid = true;
 #endif
-            Dictionary<int, decimal> appStorePriceTiers = new Dictionary<int, decimal>(); 
+            Dictionary<int, decimal> appStorePriceTiers = new Dictionary<int, decimal>();
 
             // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
             var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
@@ -150,6 +160,13 @@ namespace InApp
         {
             var process = new InAppProcess();
 
+            //if (_isInit)
+            //{
+            //    process.result = Result.Succes;
+            //    process.isDone = true;
+            //    return process;
+            //}
+
             void initHandler(Result result)
             {
                 if (result == Result.Succes)
@@ -225,8 +242,49 @@ namespace InApp
 
         private void RefreshProducts()
         {
-            //заглушка
-            //реализовать обновление параметров с сервера маркета и сохранение в префсы
+            UnityEngine.Purchasing.Product[] unityProducts = _storeController.products.all;
+
+            foreach (var unityProduct in unityProducts)
+            {
+                string unityIapProductId = unityProduct.definition.storeSpecificId;
+                var product = _products.Find(preProduct => preProduct.Id == unityIapProductId);
+
+                product.description = unityProduct.metadata.localizedDescription;
+
+                var title = unityProduct.metadata.localizedTitle;
+                //маркет возвращает заголовок с названием игры в скобках почему-то
+                var mathChar = '(';
+                if (title.Contains(mathChar))
+                {
+                    var chatNum = title.IndexOf(mathChar);
+                    title = title.Remove(chatNum);
+                }
+                product.title = title;
+
+
+                //маркет возвращает символ, которого нет в наших 
+                var price = unityProduct.metadata.localizedPriceString;
+                if (_locale == TranslationLocale.ru_RU) //пока корректно форматируется только русский язык. Зависит от используемых шрифтов.
+                {
+                    var mathCharInPrice = '₽';
+                    if (price.Contains(mathCharInPrice))
+                    {
+                        var chatNum = price.IndexOf(mathCharInPrice);
+                        price = price.Remove(chatNum, 1);
+                        price += "RUB";
+                    }
+                }
+
+                var mathCharInPrice2 = ",00";
+                if (price.Contains(mathCharInPrice2))
+                {
+                    var chatNum = price.IndexOf(mathCharInPrice2);
+                    price = price.Remove(chatNum, mathCharInPrice2.Count());
+                }
+                product.price = price;
+
+                SaveProductToPlayerPrefs(product, _keyForTitle, _keyForDescription, _keyForPrice);
+            }
         }
 
         private Sprite GetSpriteWithId(string id)

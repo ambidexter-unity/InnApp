@@ -38,6 +38,12 @@ namespace InAppPurchasing
 
         private readonly UnityEngine.Purchasing.TranslationLocale _locale;
 
+        private IEnumerator DelayAction(float second, Action action)
+        {
+            yield return new WaitForSecondsRealtime(second);
+            action?.Invoke();
+        }
+
         public InApp(TranslationLocale locale)
         {
             _locale = (UnityEngine.Purchasing.TranslationLocale)(int)locale;
@@ -45,7 +51,7 @@ namespace InAppPurchasing
             // ключи для PlayerPrefs
             var temp = new Product(string.Empty);
             string _baseKey = nameof(InApp);
-            _keyForCheckSave = _baseKey + nameof(temp.IsBuy);
+            _keyForCheckSave = _baseKey + "IsSave";
             _keyForTitle = _baseKey + nameof(temp.Title);
             _keyForDescription = _baseKey + nameof(temp.Description);
             _keyForPrice = _baseKey + nameof(temp.Price);
@@ -53,7 +59,7 @@ namespace InAppPurchasing
 
             bool isAndroid = false;
 #if UNITY_EDITOR
-            isAndroid = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
+            isAndroid = (EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS) == false;
 #elif UNITY_IPHONE
             isAndroid = false;
 #elif UNITY_ANDROID
@@ -79,11 +85,11 @@ namespace InAppPurchasing
                 Debug.LogError($"Не найден файл по пути {ProductIcons.RESOURCES_PATH} !");
             }
 
-            // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
-            var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
-
             string decimalFormatingStyle = "F2";
             string paymentCurrency = "USD"; //для дефолтных значений ценник всегда в долларах, особенность реализации ProductCatalog
+
+            // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
+            var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
 
             foreach (var defaultProduct in defaultCatalog.allValidProducts)
             {
@@ -107,9 +113,14 @@ namespace InAppPurchasing
                 else
                 {
                     //формируем продукт ProductCatalog (дефолтные значения)
-                    var translation =  defaultProduct.GetOrCreateDescription(_locale); 
+                    var translation = defaultProduct.GetDescription(_locale);
+
+                    if (translation == null)
+                        translation = defaultProduct.defaultDescription;
+
                     product.title = translation.Title;
                     product.description = translation.Description;
+
                     string price = string.Empty;
                     if (isAndroid)
                     {
@@ -250,7 +261,6 @@ namespace InAppPurchasing
                 if (idProduct == id && result == Result.Succes)
                 {
                     //действия при удачной покупке
-
                     switch (product.ProductType)
                     {
                         case ProductType.Consumable:
@@ -300,6 +310,7 @@ namespace InAppPurchasing
 
                 //маркет возвращает символ, которого может не быть в наших шрифтах
                 var price = unityProduct.metadata.localizedPriceString;
+
                 if (_locale == UnityEngine.Purchasing.TranslationLocale.ru_RU) //пока корректно форматируется только русский язык. Зависит от используемых шрифтов.
                 {
                     var mathCharInPrice = '₽';
@@ -307,15 +318,14 @@ namespace InAppPurchasing
                     {
                         var chatNum = price.IndexOf(mathCharInPrice);
                         price = price.Remove(chatNum, 1);
-                        price += "RUB";
+                        price += " RUB";
                     }
                 }
 
-                var mathCharInPrice2 = ",00";
-                if (price.Contains(mathCharInPrice2))
+                var mathCharInPrice2 = " RUB";
+                if (price.Contains(mathCharInPrice2) == false)
                 {
-                    var chatNum = price.IndexOf(mathCharInPrice2);
-                    price = price.Remove(chatNum, mathCharInPrice2.Count());
+                    price += mathCharInPrice2;
                 }
                 product.price = price;
 

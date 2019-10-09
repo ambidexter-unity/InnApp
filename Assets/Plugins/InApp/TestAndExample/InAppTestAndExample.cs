@@ -15,6 +15,8 @@ public class InAppTestAndExample : MonoBehaviour
     private void Start()
     {
         //Создаем экземпляр, передавая в конструктор текущик язык. На этом этапе уже подтянутся все дефолтные или сохраненные продукты с последними параметрами
+        //InApp inApp = new InApp(TranslationLocale.de_DE);
+        //InApp inApp = new InApp(TranslationLocale.en_US);
         InApp inApp = new InApp(TranslationLocale.ru_RU);
 
         // Работать с продуктами можно до начала инициализации

@@ -3,15 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace InApp
+namespace InAppPurchasing
 {
     public class ProductIcons : ScriptableObject
     {
         public const string FUUL_PATH = "Assets/Resources/ProductIcons.asset";
         public const string RESOURCES_PATH = "ProductIcons.asset";
-
+#pragma warning disable 649
         [SerializeField]
         private List<ProductIconsItem> _productIconsItems;
+#pragma warning restore 649
 
         public Dictionary<string, Sprite> GetProductIconsList()
         {
@@ -32,6 +33,7 @@ namespace InApp
     [Serializable]
     public class ProductIconsItem
     {
+#pragma warning disable 649
         [SerializeField]
         private string _productId;
         public string ProductId => _productId;
@@ -39,5 +41,6 @@ namespace InApp
         [SerializeField]
         private Sprite _productIcon;
         public Sprite ProductIcon => _productIcon;
+#pragma warning restore 649
     }
 }

@@ -1,8 +1,6 @@
 {
     "name": "io.ambidexter.inapp",
-    "references": [
-        "GUID:73ab25c7c953632449e54f2ac52df88f"
-    ],
+    "references": [],
     "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],

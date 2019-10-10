@@ -83,6 +83,8 @@ public class InAppTestAndExample : MonoBehaviour
 
     private IEnumerator InitInAppObserveCoroutione(IInAppProcess process, InApp inApp)
     {
+        yield return new WaitForSecondsRealtime(1f); // имитация соединения
+
         bool initSucces = false;
         var currentProcess = process;
 
@@ -93,7 +95,7 @@ public class InAppTestAndExample : MonoBehaviour
             if (currentProcess.Result == Result.Succes)
             {
                 initSucces = true;
-                RefreshAllUiProductItems(inApp);
+                RefreshAllUiProductItems(inApp.Product);
                 Debug.Log("Инициализация прошла удачно!");
             }
             else
@@ -104,11 +106,9 @@ public class InAppTestAndExample : MonoBehaviour
         }
     }
 
-    private void RefreshAllUiProductItems(InApp inApp)
+    private void RefreshAllUiProductItems(List<IProduct> products)
     {
         //Обновляем ui по параметрам, которые могут изменится на маркете - название продукта, описание, ценник
-        List<IProduct> products = inApp.Product;
-
         foreach (var product in products)
         {
             string title = product.Title;

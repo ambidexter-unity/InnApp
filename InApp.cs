@@ -102,9 +102,9 @@ namespace InAppPurchasing
                     product.title = PlayerPrefs.GetString(_keyForTitle + product.Id, string.Empty);
                     product.description = PlayerPrefs.GetString(_keyForDescription + product.Id, string.Empty);
                     product.price = PlayerPrefs.GetString(_keyForPrice + product.Id, string.Empty);
-                    product.isBuy = product.ProductType == ProductType.Consumable
-                    ? false
-                    : PlayerPrefs.GetString(_keyForCheckIsBy + defaultProduct.id, false.ToString()) == true.ToString();
+                    product.isBuy = PlayerPrefs.GetString(_keyForCheckIsBy + defaultProduct.id, false.ToString()) == true.ToString();
+
+                    Debug.Log(product.isBuy);
 
                     if (new List<string>() { product.title, product.description, product.price, product.isBuy.ToString() }
                     .Exists(parameters => string.IsNullOrEmpty(parameters)) == true)
@@ -192,11 +192,13 @@ namespace InAppPurchasing
                     else if (key == _keyForCheckIsBy) PlayerPrefs.SetString(_keyForCheckIsBy + product.Id, product.IsBuy.ToString());
                     else Debug.LogError($"Попытка сохранить параметр продукта {product.Id} по ключу {key}, " +
                         $"которого нет среди возможных к сохранению");
+
+                    Debug.Log($"продукт {product.Id}, Ключ: {key}");
                 }
             }
             else
             {
-                PlayerPrefs.SetString(_keyForCheckSave + product.Id, true.ToString());
+                PlayerPrefs.SetString(_keyForCheckSave + product.Id, product.IsBuy.ToString());
                 PlayerPrefs.SetString(_keyForTitle + product.Id, product.Title);
                 PlayerPrefs.SetString(_keyForDescription + product.Id, product.Description);
                 PlayerPrefs.SetString(_keyForPrice + product.Id, product.Price);
@@ -273,6 +275,10 @@ namespace InAppPurchasing
                         default:
                             break;
                     }
+
+                    SaveProductToPlayerPrefs(product, _keyForCheckIsBy);
+
+                    Debug.Log(PlayerPrefs.GetString(_keyForCheckIsBy + product.Id, "none"));
                 }
 
                 process.result = result;

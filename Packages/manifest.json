@@ -1,22 +1,15 @@
 {
   "dependencies": {
-    "com.unity.2d.sprite": "1.0.0",
-    "com.unity.2d.tilemap": "1.0.0",
     "com.unity.ads": "2.0.8",
     "com.unity.analytics": "3.3.2",
     "com.unity.collab-proxy": "1.2.16",
-    "com.unity.ide.rider": "1.1.4",
-    "com.unity.ide.vscode": "1.1.3",
+    "com.unity.package-manager-ui": "2.1.2",
     "com.unity.purchasing": "2.0.6",
-    "com.unity.test-framework": "1.1.3",
     "com.unity.textmeshpro": "2.0.1",
-    "com.unity.timeline": "1.2.6",
-    "com.unity.ugui": "1.0.0",
+    "com.unity.timeline": "1.0.0",
     "io.ambidexter.extensions": "https://github.com/ambidexter-unity/Extensions.git#1.0.0",
-    "io.ambidexter.inapp": "https://github.com/ambidexter-unity/InnApp.git#1.0.0",
     "io.ambidexter.logicality": "https://github.com/ambidexter-unity/Logicality.git#1.0.0",
     "com.unity.modules.ai": "1.0.0",
-    "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",
     "com.unity.modules.assetbundle": "1.0.0",
     "com.unity.modules.audio": "1.0.0",
@@ -65,12 +58,12 @@
   ],
   "lock": {
     "io.ambidexter.extensions": {
-      "revision": "1.0.0",
-      "hash": "55a8d9e412bab2a432e2902abc88f5ae17ed9ed7"
+      "hash": "55a8d9e412bab2a432e2902abc88f5ae17ed9ed7",
+      "revision": "1.0.0"
     },
     "io.ambidexter.logicality": {
-      "revision": "1.0.0",
-      "hash": "0a5df1954199519f240fee2bc926c5164b11e88a"
+      "hash": "0a5df1954199519f240fee2bc926c5164b11e88a",
+      "revision": "1.0.0"
     }
   }
 }

@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4186e8124a5237a49af9268d07115235, type: 3}
   m_Name: AnyScriptableObject
   m_EditorClassIdentifier: 
-  example: 1
+  _productIconsItems:
+  - _productId: 
+    _productIcon: {fileID: 0}

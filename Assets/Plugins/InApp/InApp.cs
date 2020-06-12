@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +11,10 @@ using InAppPurchasing.SubClasses;
 //Обратите внимание, что используются типы с одинаковыми названиями в пространствах InAppPurchasing и UnityEngine.Purchasing
 //Ряд типов и перечислений продублировано в пользовательском пространстве имен, чтобы сокрыть UnityEngine.Purchasing
 using Product = InAppPurchasing.SubClasses.Product;
+using Debug = UnityEngine.Debug;
 using ProductType = UnityEngine.Purchasing.ProductType;
 using TranslationLocale = UnityEngine.Purchasing.TranslationLocale;
+using System.Diagnostics;
 
 namespace InAppPurchasing
 {
@@ -25,7 +27,9 @@ namespace InAppPurchasing
         public List<IProduct> Product => _products.Select(product => product as IProduct).ToList();
 
         private IStoreController _storeController;
+#if UNITY_IPHONE
         private IAppleExtensions _appleExtensions;
+#endif
 
         private event Action<Result> _initEvent;
         private event Action<string, Result> _purchasingEvent; //(id продукта, результат)
@@ -86,7 +90,7 @@ namespace InAppPurchasing
             }
 
             string decimalFormatingStyle = "F2";
-            string paymentCurrency = "USD"; //для дефолтных значений ценник всегда в долларах, особенность реализации ProductCatalog
+            string paymentCurrency = "RUB";
 
             // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
             var defaultCatalog = ProductCatalog.LoadDefaultCatalog();
@@ -308,25 +312,14 @@ namespace InAppPurchasing
                 }
                 product.title = title;
 
-                //маркет возвращает символ, которого может не быть в наших шрифтах
                 var price = unityProduct.metadata.localizedPriceString;
 
-                if (_locale == UnityEngine.Purchasing.TranslationLocale.ru_RU) //пока корректно форматируется только русский язык. Зависит от используемых шрифтов.
+                //маркет возвращает символ, которого может не быть в наших шрифтах. Обработан только вариант с рублем.
+                if (price.Contains('₽') || price.Contains("RUB")) 
                 {
-                    var mathCharInPrice = '₽';
-                    if (price.Contains(mathCharInPrice))
-                    {
-                        var chatNum = price.IndexOf(mathCharInPrice);
-                        price = price.Remove(chatNum, 1);
-                        price += " RUB";
-                    }
+                    price = (unityProduct.metadata.localizedPrice.ToString("F2") + " RUB");
                 }
 
-                var mathCharInPrice2 = " RUB";
-                if (price.Contains(mathCharInPrice2) == false)
-                {
-                    price += mathCharInPrice2;
-                }
                 product.price = price;
 
                 SaveProductToPlayerPrefs(product, _keyForTitle, _keyForDescription, _keyForPrice);
@@ -339,9 +332,11 @@ namespace InAppPurchasing
         {
             _storeController = controller;
 
+#if UNITY_IPHONE
+
             _appleExtensions = extensions.GetExtension<IAppleExtensions>();
             _appleExtensions.RegisterPurchaseDeferredListener(item => Debug.Log("Purchase iOS deferred: " + item.definition.id));
-
+#endif
             _initEvent?.Invoke(Result.Succes);
             Debug.Log("IAP Initialized succes");
         }
@@ -396,7 +391,7 @@ namespace InAppPurchasing
             _purchasingEvent?.Invoke(id, result);
         }
 
-        #endregion
+#endregion
     }
 
     public interface IInAppProcess

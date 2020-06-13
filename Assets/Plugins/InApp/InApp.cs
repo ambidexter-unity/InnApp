@@ -40,6 +40,38 @@ namespace InAppPurchasing
         private readonly string _keyForPrice;
         private readonly string _keyForCheckIsBy;
 
+        private const string STRING_MODIFICATOR_FOR_PRICE = "F2";
+
+        private Dictionary<char, string> currencySignsToTranscripts = new Dictionary<char, string>()
+        {
+            ['₴'] = "UAH",
+            ['$'] = "USD",
+            ['€'] = "EUR",
+            ['£'] = "GBP",
+            ['¥'] = "JPY",
+            ['¥'] = "CNY",
+            ['₽'] = "RUB",
+            ['₪'] = "ILS",
+            ['₨'] = "INR",
+            ['₩'] = "KRW",
+            ['₦'] = "NGN",
+            ['฿'] = "THB",
+            ['₫'] = "VND",
+            ['₭'] = "LAK",
+            ['៛'] = "KHR",
+            ['₮'] = "MNT",
+            ['₱'] = "PHP",
+            ['﷼'] = "IRR",
+            ['₡'] = "CRC",
+            ['₲'] = "PYG",
+            ['؋'] = "AFN",
+            ['₵'] = "GHS",
+            ['₸'] = "KZT",
+            ['₺'] = "TRY",
+            ['₼'] = "AZN",
+            ['₾'] = "GEL"
+        };
+
         private readonly UnityEngine.Purchasing.TranslationLocale _locale;
 
         private IEnumerator DelayAction(float second, Action action)
@@ -89,7 +121,7 @@ namespace InAppPurchasing
                 Debug.LogError($"Не найден файл по пути {ProductIcons.RESOURCES_PATH} !");
             }
 
-            string decimalFormatingStyle = "F2";
+            string decimalFormatingStyle = STRING_MODIFICATOR_FOR_PRICE;
             string paymentCurrency = "RUB";
 
             // заполняем продукты из сохраненных данных - по умолчанию или из PlayerPrefs
@@ -312,18 +344,40 @@ namespace InAppPurchasing
                 }
                 product.title = title;
 
-                var price = unityProduct.metadata.localizedPriceString;
+                var localizedPriceString = unityProduct.metadata.localizedPriceString;
+                var localizedPrice = unityProduct.metadata.localizedPrice;
 
-                //маркет возвращает символ, которого может не быть в наших шрифтах. Обработан только вариант с рублем.
-                if (price.Contains('₽') || price.Contains("RUB")) 
-                {
-                    price = (unityProduct.metadata.localizedPrice.ToString("F2") + " RUB");
-                }
-
-                product.price = price;
+                product.price = ConvertToCorrectStringPrice(localizedPriceString, localizedPrice);
 
                 SaveProductToPlayerPrefs(product, _keyForTitle, _keyForDescription, _keyForPrice);
             }
+        }
+
+        private string ConvertToCorrectStringPrice(string stringValue, decimal longValue)
+        {
+            var result = stringValue;
+
+            char? foundCurrencySymbol = null;
+
+            foreach (var item in stringValue)
+            {
+                if (foundCurrencySymbol.HasValue)
+                {
+                    break;
+                }
+
+                if (currencySignsToTranscripts.ContainsKey(item))
+                {
+                    foundCurrencySymbol = item;
+                }
+            }
+
+            if (foundCurrencySymbol.HasValue)
+            {
+                result = $"{longValue.ToString(STRING_MODIFICATOR_FOR_PRICE)} {currencySignsToTranscripts[foundCurrencySymbol.Value]}";
+            }
+
+            return result;
         }
 
         #region IStoreListener
@@ -391,7 +445,7 @@ namespace InAppPurchasing
             _purchasingEvent?.Invoke(id, result);
         }
 
-#endregion
+        #endregion
     }
 
     public interface IInAppProcess

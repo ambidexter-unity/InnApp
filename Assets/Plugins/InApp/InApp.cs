@@ -333,7 +333,6 @@ namespace InAppPurchasing
                 var product = _products.Find(preProduct => preProduct.Id == unityIapProductId);
 
                 product.description = unityProduct.metadata.localizedDescription;
-                product.receipt = unityProduct.hasReceipt ? unityProduct.receipt : string.Empty;
                 var title = unityProduct.metadata.localizedTitle;
                 //маркет возвращает заголовок с названием игры в скобках почему-то
                 var mathChar = '(';
@@ -420,7 +419,6 @@ namespace InAppPurchasing
             string id = argument.purchasedProduct.definition.id;
             var receipt = argument.purchasedProduct.receipt;
             var product = _products.Find(_ => _.Id == id);
-            product.receipt = receipt;
 
             _purchasingEvent?.Invoke(id, Result.Succes, receipt);
 
@@ -434,7 +432,6 @@ namespace InAppPurchasing
         {
             string id = unityProduct.definition.id;
             var product = _products.Find(_ => _.Id == id);
-            product.receipt = null;
 
             Result result;
 
@@ -477,7 +474,6 @@ namespace InAppPurchasing
         string Price { get; }
         bool IsBuy { get; }
         Sprite Icon { get; }
-        string Receipt { get; }
     }
 
     public enum ProductType
@@ -559,9 +555,6 @@ namespace InAppPurchasing.SubClasses
         public Sprite Icon => icon;
 
         public IDs MarketIds;
-
-        public string receipt;
-        public string Receipt => receipt;
 
         public Product(string id)
         {

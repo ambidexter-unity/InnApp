@@ -32,7 +32,7 @@ namespace InAppPurchasing
 #endif
 
         private event Action<Result> _initEvent;
-        private event Action<string, Result> _purchasingEvent; //(id продукта, результат)
+        private event Action<string, Result, string> _purchasingEvent; //(id продукта, результат, чек)
 
         private readonly string _keyForCheckSave;
         private readonly string _keyForTitle;
@@ -290,7 +290,7 @@ namespace InAppPurchasing
 
             var product = _products.Find(predicate);
 
-            void purchaseHandler(string id, Result result)
+            void purchaseHandler(string id, Result result, string receipt = null)
             {
                 if (idProduct == id && result == Result.Succes)
                 {
@@ -333,7 +333,7 @@ namespace InAppPurchasing
                 var product = _products.Find(preProduct => preProduct.Id == unityIapProductId);
 
                 product.description = unityProduct.metadata.localizedDescription;
-
+                product.receipt = unityProduct.hasReceipt ? unityProduct.receipt : string.Empty;
                 var title = unityProduct.metadata.localizedTitle;
                 //маркет возвращает заголовок с названием игры в скобках почему-то
                 var mathChar = '(';
@@ -418,17 +418,24 @@ namespace InAppPurchasing
         PurchaseProcessingResult IStoreListener.ProcessPurchase(PurchaseEventArgs argument)
         {
             string id = argument.purchasedProduct.definition.id;
+            var receipt = argument.purchasedProduct.receipt;
+            var product = _products.Find(_ => _.Id == id);
+            product.receipt = receipt;
+
+            _purchasingEvent?.Invoke(id, Result.Succes, receipt);
 
             Debug.Log("Purchase succes: " + id);
-            Debug.Log("Receipt: " + argument.purchasedProduct.receipt);
+            Debug.Log("Receipt: " + receipt);
 
-            _purchasingEvent?.Invoke(id, Result.Succes);
             return PurchaseProcessingResult.Complete;
         }
 
         void IStoreListener.OnPurchaseFailed(UnityEngine.Purchasing.Product unityProduct, PurchaseFailureReason reuqest)
         {
             string id = unityProduct.definition.id;
+            var product = _products.Find(_ => _.Id == id);
+            product.receipt = null;
+
             Result result;
 
             if (reuqest == PurchaseFailureReason.UserCancelled)
@@ -442,7 +449,7 @@ namespace InAppPurchasing
                 Debug.Log("Purchase error: " + id + " " + reuqest.ToString());
             }
 
-            _purchasingEvent?.Invoke(id, result);
+            _purchasingEvent?.Invoke(id, result, null);
         }
 
         #endregion
@@ -470,6 +477,7 @@ namespace InAppPurchasing
         string Price { get; }
         bool IsBuy { get; }
         Sprite Icon { get; }
+        string Receipt { get; }
     }
 
     public enum ProductType
@@ -551,6 +559,9 @@ namespace InAppPurchasing.SubClasses
         public Sprite Icon => icon;
 
         public IDs MarketIds;
+
+        public string receipt;
+        public string Receipt => receipt;
 
         public Product(string id)
         {

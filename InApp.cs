@@ -313,6 +313,7 @@ namespace InAppPurchasing
 
                 process.result = result;
                 process.isDone = true;
+                process.argument = receipt;
 
                 _purchasingEvent -= purchaseHandler;
             }
@@ -456,6 +457,7 @@ namespace InAppPurchasing
     {
         bool IsDone { get; }
         Result Result { get; }
+        object Argument { get; }
     }
 
     public enum Result
@@ -529,6 +531,9 @@ namespace InAppPurchasing.SubClasses
 
         public Result result = Result.Other;
         public Result Result => result;
+
+        public object argument;
+        public object Argument => argument;
     }
 
     public class Product : IProduct
